@@ -6,3 +6,9 @@ data/raw/*.csv
 data/raw/*.jsonl
 .env
 *.ipynb_checkpoints
+
+data/processed/*_transactions.csv
+data/processed/*_products.csv
+data/processed_60k/data/processed/*_transactions.csv
+data/processed/*_products.csv
+data/processed_60k/

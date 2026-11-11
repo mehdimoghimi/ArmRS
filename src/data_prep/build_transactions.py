@@ -21,7 +21,7 @@ import os
 import pandas as pd
 
 MIN_RATING = 4          # فقط رتبه‌بندی‌های ۴ و ۵ به‌عنوان "خرید مثبت" در نظر گرفته می‌شن
-MAX_USERS = 8000         # برای نسخه اول، فقط پرتعامل‌ترین کاربران رو نگه می‌داریم
+MAX_USERS = 8000         # پیش‌فرض؛ با --max-users قابل تغییره
 MIN_ITEMS_PER_USER = 2   # کاربرانی با کمتر از ۲ آیتم برای ARM بی‌فایده‌ن، حذف می‌شن
 
 
@@ -32,12 +32,12 @@ def load_ratings(raw_dir: str, category: str) -> pd.DataFrame:
     return df
 
 
-def build_transactions(df: pd.DataFrame) -> pd.DataFrame:
+def build_transactions(df: pd.DataFrame, max_users: int = MAX_USERS) -> pd.DataFrame:
     df = df[df["rating"] >= MIN_RATING].copy()
 
     # پرتعامل‌ترین کاربران رو نگه می‌داریم (نه نمونه تصادفی، چون کاربران کم‌تعامل برای ARM اطلاعات کمی دارن)
     user_counts = df.groupby("user_id").size().sort_values(ascending=False)
-    top_users = user_counts.head(MAX_USERS).index
+    top_users = user_counts.head(max_users).index
     df = df[df["user_id"].isin(top_users)]
 
     # هر کاربر ممکنه چند بار یک محصول رو ریویو کرده باشه؛ یکتا می‌کنیم
@@ -85,6 +85,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--category", required=True,
                          help="e.g. Cell_Phones_and_Accessories or Electronics")
+    parser.add_argument("--max-users", type=int, default=MAX_USERS)
     parser.add_argument("--raw-dir", default="data/raw")
     parser.add_argument("--out-dir", default="data/processed")
     args = parser.parse_args()
@@ -92,7 +93,7 @@ def main():
     os.makedirs(args.out_dir, exist_ok=True)
 
     ratings = load_ratings(args.raw_dir, args.category)
-    transactions = build_transactions(ratings)
+    transactions = build_transactions(ratings, args.max_users)
 
     needed_asins = set(a for items in transactions["items"] for a in items)
     products = load_products_meta(args.raw_dir, args.category, needed_asins)
